@@ -13,7 +13,7 @@
     flakeUtils,
     ...
   }:
-    flakeUtils.lib.eachDefaultSystem (system: let
+    with flakeUtils.lib; eachSystem allSystems (system: let
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
