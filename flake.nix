@@ -39,7 +39,7 @@
             importedFiles = builtins.map (
               path:
               import path {
-                lib' = self.lib.${system};
+                lib' = lib;
                 inherit (pkgs) lib;
               }
             ) libFiles;
