@@ -17,7 +17,7 @@ let
 
   inherit (lib') fmatch;
 in
-{
+rec {
   mkModuleWithOptions =
     {
       config,
@@ -61,5 +61,26 @@ in
       options = (setAttrByPath modulePath moduleOptions) // options';
 
       config = mkIf (extraCondition (getAttrFromPath enableOptionPath config)) cfg;
+    };
+
+  mkModule =
+    config: name: moduleConfig:
+    mkModuleWithOptions {
+      inherit
+        config
+        name
+        moduleConfig
+        ;
+    };
+
+  mkModule' =
+    config: name: default: moduleConfig:
+    mkModuleWithOptions {
+      inherit
+        config
+        name
+        default
+        moduleConfig
+        ;
     };
 }
