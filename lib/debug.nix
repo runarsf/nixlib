@@ -1,7 +1,5 @@
-{ ... }:
-let
+_: let
   inherit (builtins) trace;
-in
-{
+in {
   print = x: trace x x;
 }
