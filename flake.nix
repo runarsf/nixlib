@@ -13,32 +13,23 @@
     };
   };
 
-  outputs = {
+  outputs = inputs @ {
     self,
     nixpkgs,
-    alejandra,
     flake-utils,
-    treefmt-nix,
     ...
   }: let
-    inherit
-      (import ./lib/paths.nix {
-        inherit (nixpkgs) lib;
-        # Partial implementation of lib', as concatPaths is used to build lib'.
-        lib' = {
-          toList = x:
-            if builtins.isList x
-            then x
-            else [x];
-        };
-      })
-      concatPaths
-      ;
+    fs = import ./lib/filesystem.nix {
+      inherit (nixpkgs) lib;
+      # Partial implementation of lib', as concatPaths is used to build lib'.
+      lib' = {};
+    };
+    inherit (fs) concatPaths;
 
     lib = nixpkgs.lib.makeExtensible (
       self: let
         libFiles = concatPaths {
-          path = ./lib;
+          paths = ./lib;
           recursive = false;
         };
 
@@ -64,11 +55,11 @@
           inherit system;
           overlays = [
             (self: super: {
-              alejandra = alejandra.packages.${system}.default;
+              alejandra = inputs.alejandra.packages.${system}.default;
             })
           ];
         };
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+        treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
       in {
         packages = {
           nixdoc = pkgs.writeShellScriptBin "nixdoc-generate" ''
