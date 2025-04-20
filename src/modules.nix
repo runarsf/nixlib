@@ -14,7 +14,7 @@
 
   inherit (lib.types) bool;
 
-  inherit (lib') fmatch;
+  inherit (lib'.matching) fmatch;
 in rec {
   exports = {
     inherit mkModuleWithOptions mkModule mkModule';

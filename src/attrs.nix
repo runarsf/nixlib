@@ -6,7 +6,7 @@
 
   inherit (lib) foldl setAttrByPath recursiveUpdate;
 
-  inherit (lib'.match) fmatch;
+  inherit (lib'.matching) fmatch;
 in rec {
   exports = {
     inherit fill enable disable;
