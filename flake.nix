@@ -6,6 +6,11 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
+    haumea = {
+      url = "github:nix-community/haumea/v0.2.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
     alejandra = {
       url = "github:kamadorueda/alejandra/4.0.0";
@@ -19,42 +24,27 @@
     flake-utils,
     ...
   }: let
-    fs = import ./lib/filesystem.nix {
-      inherit (nixpkgs) lib;
-      # Partial implementation of lib', as concatPaths is used to build lib'.
-      lib' = {};
-    };
-    inherit (fs) concatPaths;
-
-    lib = nixpkgs.lib.makeExtensible (
-      self: let
-        libFiles = concatPaths {
-          paths = ./lib;
-          recursive = false;
-        };
-
-        importedFiles =
-          builtins.map (
-            path:
-              import path {
-                inherit (nixpkgs) lib;
-                lib' = lib;
-              }
-          )
-          libFiles;
-      in
-        nixpkgs.lib.mergeAttrsList importedFiles
-    );
+    promoteExports = import ./lib/transformers/promoteExports.nix {};
   in
     {
-      inherit lib;
+      lib = nixpkgs.lib.makeExtensible (
+        _:
+          inputs.haumea.lib.load {
+            src = ./lib;
+            transformer = promoteExports "exports";
+            inputs = {
+              inherit (nixpkgs) lib;
+              lib' = self.lib;
+            };
+          }
+      );
     }
     // flake-utils.lib.eachDefaultSystem (
       system: let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            (self: super: {
+            (_: _: {
               alejandra = inputs.alejandra.packages.${system}.default;
             })
           ];
