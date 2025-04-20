@@ -29,6 +29,7 @@
 
   fs = {inherit (lib.fileset) toList maybeMissing;};
 in {
+  exports = {
   /**
   Collects `.nix` files from given paths,
   optionally recursing through subdirectories and applies filters.
@@ -155,4 +156,5 @@ in {
     ];
   in
     finalFiles;
+  };
 }

@@ -1,5 +1,7 @@
 let
   inherit (builtins) trace;
 in {
-  print = x: trace x x;
+  exports = {
+    print = x: trace x x;
+  };
 }
