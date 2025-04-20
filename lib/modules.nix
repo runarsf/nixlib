@@ -1,7 +1,6 @@
 {
   lib,
   lib',
-  ...
 }: let
   inherit (builtins) isString isList throw;
 
