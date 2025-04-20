@@ -1,23 +1,38 @@
-{lib, ...}: let
-  inherit (builtins) match filter elem any readDir baseNameOf toString dirOf;
+{lib}: let
+  inherit
+    (builtins)
+    match
+    filter
+    elem
+    any
+    readDir
+    baseNameOf
+    toString
+    dirOf
+    isPath
+    isString
+    ;
 
   inherit (lib) toList;
 
   inherit (lib.path) hasPrefix;
 
-  inherit (lib.lists) unique concatMap;
-
-  inherit (lib.strings) hasSuffix;
+  inherit (lib.trivial) warnIf;
 
   inherit (lib.attrsets) mapAttrsToList;
 
+  inherit (lib.strings) hasSuffix splitString;
+
+  inherit (lib.lists) unique concatMap flatten length;
+
   inherit (lib.filesystem) pathIsRegularFile pathIsDirectory;
 
-  fs = {inherit (lib.fileset) toList;};
+  fs = {inherit (lib.fileset) toList maybeMissing;};
 in {
   /**
   Collects `.nix` files from given paths,
   optionally recursing through subdirectories and applies filters.
+  Inspired by and adapted from https://github.com/yunfachi/nypkgs/blob/master/lib/umport.nix
 
   # Arguments
 
@@ -30,7 +45,9 @@ in {
 
   exclude
   : Paths or files to exclude from results.
-  : Takes precedence over `include`.
+  : Can be a list of paths or extended POSIX regular expressions.
+  : Regexes are matched against each component of the path.
+  : Explicitly excluded paths take precedence over `include`, but regexes do not.
 
   recursive
   : Whether to search subdirectories.
@@ -44,7 +61,7 @@ in {
   concatPaths :: {
     paths: Path | [Path],
     include?: Path | [Path],
-    exclude?: Path | [Path],
+    exclude?: Path | [Path|String],
     recursive?: Bool,
     filterDefault?: Bool,
   } -> [Path]
@@ -55,7 +72,7 @@ in {
   ```nix
   concatPaths {
     paths = [ ./lib ./modules ];
-    exclude = [ ./modules/deprecated ];
+    exclude = [ ./modules/deprecated "^\\..*" ];
   }
   => [ ./lib/foo.nix ./modules/bar.nix ./modules/module/default.nix ]
   */
@@ -66,42 +83,53 @@ in {
     recursive ? true,
     filterDefault ? true,
   }: let
-    # Coerce paths to lists
-    paths' = unique <| toList paths;
-    include' = unique <| toList include;
-    exclude' = unique <| toList exclude;
+    # Coerce arguments to lists
+    coerce = x: unique <| toList x;
+    paths' = coerce paths;
+    include' = coerce include;
+    exclude' = coerce exclude;
 
     # Helper functions
     isNixFile = path: pathIsRegularFile path && hasSuffix ".nix" (toString path);
     isDefaultNix = path: match "default.nix" (baseNameOf path) != null;
+    toListMaybe = path: fs.toList <| fs.maybeMissing path;
 
-    # Process exclusions
-    excludedFiles = filter pathIsRegularFile exclude';
-    excludedDirs = filter pathIsDirectory exclude';
-    isExcluded = path:
+    # Split exclude into paths and regex patterns
+    excludedPaths = filter isPath exclude';
+    excludedPatterns = filter isString exclude';
+
+    # Path-based exclusion
+    excludedFiles = filter pathIsRegularFile excludedPaths;
+    excludedDirs = filter pathIsDirectory excludedPaths;
+    pathExcluded = path:
       elem path excludedFiles
-      || any (excludedDir: hasPrefix excludedDir path) excludedDirs;
+      || any (excludedDir: hasPrefix (toString excludedDir + "/") (toString path + "/")) excludedDirs;
+
+    # Regex component matching
+    componentExcluded = path: let
+      components =
+        path
+        |> toString
+        |> splitString "/"
+        |> filter (s: s != "");
+      matches = component: any (pattern: match pattern component != null) excludedPatterns;
+    in
+      any matches components;
 
     # Get all candidate files
     getFiles = path:
       if recursive
-      then fs.toList path
+      then toListMaybe path
       else
-        mapAttrsToList
-        (name: type: path + "/${name}")
-        (readDir path);
+        path
+        |> readDir
+        |> mapAttrsToList (name: _: path + "/${name}");
 
     candidateFiles = unique <| concatMap getFiles paths';
 
     # Filter files
-    filteredFiles =
-      filter
-      (file: isNixFile file && !isExcluded file)
-      candidateFiles;
-    filteredInclude =
-      filter
-      (file: isNixFile file && !isExcluded file)
-      include';
+    filteredFiles = filter (f: isNixFile f && !pathExcluded f && !componentExcluded f) candidateFiles;
+    filteredInclude = filter (f: isNixFile f && !pathExcluded f) include';
 
     # Handle default.nix logic
     dirsWithDefaultNix =
@@ -109,18 +137,22 @@ in {
       |> filter isDefaultNix
       |> map dirOf
       |> unique;
-    finalFiles =
-      if filterDefault
-      then
-        filter
-        (file: !(elem (dirOf file) dirsWithDefaultNix) || isDefaultNix file)
-        filteredFiles
-      else filteredFiles;
+
+    finalFiles = flatten [
+      (
+        if filterDefault
+        then filter (file: !(elem (dirOf file) dirsWithDefaultNix) || isDefaultNix file) filteredFiles
+        else filteredFiles
+      )
+      (
+        if recursive
+        then let
+          includes = concatMap toListMaybe filteredInclude;
+        in
+          warnIf (length includes == 0) "concatPaths: No include paths found" includes
+        else filteredInclude
+      )
+    ];
   in
-    finalFiles
-    ++ (
-      if recursive
-      then concatMap fs.toList filteredInclude
-      else filteredInclude
-    );
+    finalFiles;
 }
