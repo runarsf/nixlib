@@ -72,10 +72,10 @@ in {
 
   ```nix
   concatPaths {
-    paths = [ ./lib ./modules ];
+    paths = [ ./src ./modules ];
     exclude = [ ./modules/deprecated "^\\..*" ];
   }
-  => [ ./lib/foo.nix ./modules/bar.nix ./modules/module/default.nix ]
+  => [ ./src/foo.nix ./modules/bar.nix ./modules/module/default.nix ]
   */
   concatPaths = {
     paths,

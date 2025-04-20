@@ -31,13 +31,13 @@
     flake-utils,
     ...
   }: let
-    promoteExports = import ./lib/transformers/promoteExports.nix {};
+    promoteExports = import ./src/transformers/promoteExports.nix {};
   in
     {
       lib = nixpkgs.lib.makeExtensible (
         _:
           inputs.haumea.lib.load {
-            src = ./lib;
+            src = ./src;
             transformer = promoteExports "exports";
             inputs = {
               inherit (nixpkgs) lib;
