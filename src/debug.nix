@@ -1,7 +1,9 @@
 let
   inherit (builtins) trace;
-in {
+in rec {
   exports = {
-    print = x: trace x x;
+    inherit print;
   };
+
+  print = x: trace x x;
 }

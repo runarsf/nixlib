@@ -15,68 +15,70 @@
   inherit (lib.types) bool;
 
   inherit (lib') fmatch;
-in {
-  exports = rec {
-    mkModuleWithOptions = {
-      config,
-      name,
-      moduleConfig,
-      default ? false,
-      extraCondition ? (x: x && true),
-    }: let
-      options = moduleConfig.options or {};
-      options' = moduleConfig.options' or {};
-      cfg =
-        if (moduleConfig ? options || moduleConfig ? options')
-        then moduleConfig.config or (throw "Missing toplevel config attribute")
-        else moduleConfig.config or moduleConfig;
+in rec {
+  exports = {
+    inherit mkModuleWithOptions mkModule mkModule';
+  };
 
-      pathList = fmatch name [
-        [
-          isList
-          name
-        ]
-        [
-          isString
-          [name]
-        ]
-      ];
+  mkModuleWithOptions = {
+    config,
+    name,
+    moduleConfig,
+    default ? false,
+    extraCondition ? (x: x && true),
+  }: let
+    options = moduleConfig.options or {};
+    options' = moduleConfig.options' or {};
+    cfg =
+      if (moduleConfig ? options || moduleConfig ? options')
+      then moduleConfig.config or (throw "Missing toplevel config attribute")
+      else moduleConfig.config or moduleConfig;
 
-      modulePath = ["modules"] ++ pathList;
-      enableOptionPath = modulePath ++ ["enable"];
+    pathList = fmatch name [
+      [
+        isList
+        name
+      ]
+      [
+        isString
+        [name]
+      ]
+    ];
 
-      moduleOptions =
-        {
-          enable = mkOption {
-            inherit default;
-            type = bool;
-            description = "Enable ${name} module";
-          };
-        }
-        // options;
-    in {
-      options = (setAttrByPath modulePath moduleOptions) // options';
+    modulePath = ["modules"] ++ pathList;
+    enableOptionPath = modulePath ++ ["enable"];
 
-      config = mkIf (extraCondition (getAttrFromPath enableOptionPath config)) cfg;
+    moduleOptions =
+      {
+        enable = mkOption {
+          inherit default;
+          type = bool;
+          description = "Enable ${name} module";
+        };
+      }
+      // options;
+  in {
+    options = (setAttrByPath modulePath moduleOptions) // options';
+
+    config = mkIf (extraCondition (getAttrFromPath enableOptionPath config)) cfg;
+  };
+
+  mkModule = config: name: moduleConfig:
+    mkModuleWithOptions {
+      inherit
+        config
+        name
+        moduleConfig
+        ;
     };
 
-    mkModule = config: name: moduleConfig:
-      mkModuleWithOptions {
-        inherit
-          config
-          name
-          moduleConfig
-          ;
-      };
-
-    mkModule' = config: name: default: moduleConfig:
-      mkModuleWithOptions {
-        inherit
-          config
-          name
-          default
-          moduleConfig
-          ;
-      };
-  };
+  mkModule' = config: name: default: moduleConfig:
+    mkModuleWithOptions {
+      inherit
+        config
+        name
+        default
+        moduleConfig
+        ;
+    };
 }
