@@ -10,6 +10,13 @@
       url = "github:nix-community/haumea/v0.2.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    namaka = {
+      url = "github:nix-community/namaka/v0.2.1";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        haumea.follows = "haumea";
+      };
+    };
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
     alejandra = {
@@ -66,7 +73,35 @@
 
         formatter = treefmtEval.config.build.wrapper;
 
-        checks.formatting = treefmtEval.config.build.check self;
+        checks =
+          {
+            formatting = treefmtEval.config.build.check self;
+          }
+          // inputs.namaka.lib.load {
+            src = ./tests;
+            inputs = {
+              inherit (pkgs) lib;
+              lib' = self.lib;
+            };
+          };
+
+        devShells.default = pkgs.mkShell {
+          packages = [
+            inputs.namaka.packages.${system}.default
+          ];
+
+          shellHook = ''
+            NAMAKA_VERISON="$(namaka --version | awknormal '{print $2}')"
+
+            comment="$(tput setaf 8)"
+            reset="$(tput sgr0)"
+
+            printf '\n> Namaka version:  %s\n\n' "$NAMAKA_VERISON"
+            printf 'To run tests, use:\n'
+            printf '$ namaka check   %s# run checks%s\n' "$comment" "$reset"
+            printf '$ namaka review  %s# review pending snapshots%s\n\n' "$comment" "$reset"
+          '';
+        };
       }
     );
 }

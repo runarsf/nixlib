@@ -1,13 +1,12 @@
 {
   lib,
   lib',
-  ...
 }: let
   inherit (builtins) isString isList;
 
   inherit (lib) foldl setAttrByPath recursiveUpdate;
 
-  inherit (lib') fmatch;
+  inherit (lib'.match) fmatch;
 in rec {
   /**
   Set the value of each attribute given a list of paths.
