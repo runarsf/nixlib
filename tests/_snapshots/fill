@@ -1,2 +1,2 @@
 #json
-{"a":{"b":{"enable":true},"enable":true},"c":{"enable":true}}
+{"baz":{"enable":true},"foo":{"bar":{"enable":true},"enable":true}}
