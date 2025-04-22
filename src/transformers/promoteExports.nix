@@ -1,29 +1,22 @@
 let
-  inherit (builtins) map listToAttrs concatMap attrNames isAttrs;
+  inherit (builtins) map mapAttrs attrValues foldl' isAttrs;
 in
   _: attr: _: attrs: let
-    # Replace attributes with their 'default' if present
-    replaced =
-      builtins.mapAttrs (
-        k: v:
-          if v ? ${attr}
-          then v.${attr}
-          else v
-      )
+    processed =
+      mapAttrs
+      (name: value:
+        if isAttrs value && value ? "${attr}"
+        then {
+          exports = value.${attr};
+          rest = removeAttrs value [attr];
+        }
+        else {
+          exports = {};
+          rest = value;
+        })
       attrs;
-
-    # Generate promoted attributes from nested defaults
-    promoted = listToAttrs (concatMap (
-      k: let
-        entry = attrs.${k};
-      in
-        if entry ? ${attr} && isAttrs entry.${attr}
-        then
-          map (sk: {
-            name = sk;
-            value = replaced.${k}.${sk};
-          }) (attrNames entry.${attr})
-        else []
-    ) (attrNames attrs));
+    exportsList = map (v: v.exports) (attrValues processed);
+    allExports = foldl' (acc: e: acc // e) {} exportsList;
+    originalWithoutExports = mapAttrs (name: v: v.rest) processed;
   in
-    replaced // promoted
+    originalWithoutExports // allExports
