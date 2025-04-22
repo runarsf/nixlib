@@ -44,9 +44,9 @@ in rec {
   # Example
 
   ```nix
-  match "hello" (with builtins; [
-    [ isList "string" ]
-    [ isString "list" ]
+  fmatch "hello" (with builtins; [
+    [ isString "string" ]
+    [ isList "list" ]
   ])
   => [ "string" ]
   ```
