@@ -56,11 +56,11 @@ in rec {
           description = "Enable ${name} module";
         };
       }
-      // options;
+      // options';
   in {
-    options = (setAttrByPath modulePath moduleOptions) // options';
+    options = (setAttrByPath modulePath moduleOptions) // options;
 
-    config = mkIf (extraCondition (getAttrFromPath enableOptionPath config)) cfg;
+    config = mkIf (extraCondition <| getAttrFromPath enableOptionPath config) cfg;
   };
 
   mkModule = config: name: moduleConfig:
