@@ -31,7 +31,7 @@ in rec {
     options' = moduleConfig.options' or {};
     cfg =
       if (moduleConfig ? options || moduleConfig ? options')
-      then moduleConfig.config or (throw "Missing toplevel config attribute")
+      then moduleConfig.config or (throw "Missing toplevel config attribute for ${name}")
       else moduleConfig.config or moduleConfig;
 
     pathList = fmatch name [
