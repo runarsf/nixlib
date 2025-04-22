@@ -1,0 +1,2 @@
+#json
+{"_type":"if","condition":true,"content":{"hello":"world"}}
