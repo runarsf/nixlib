@@ -11,7 +11,7 @@ in let
   result = concatPaths {
     paths = ./__test;
     include = [
-      ./__test/.vulpes/lagopus.nix
+      ./__test/canidae/.vulpes/lagopus.nix
     ];
     exclude = [
       "^\\..*" # Exclude hidden files

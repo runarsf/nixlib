@@ -1,2 +1,2 @@
 #json
-["canidae/canis/default.nix","fox.nix",".vulpes/lagopus.nix"]
+["canidae/canis/default.nix","fox.nix","canidae/.vulpes/lagopus.nix"]
