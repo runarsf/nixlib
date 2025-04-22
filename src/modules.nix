@@ -1,20 +1,17 @@
-{
-  lib,
-  lib',
-}: let
-  inherit (builtins) isString isList throw;
-
-  inherit
-    (lib)
-    mkOption
-    setAttrByPath
-    getAttrFromPath
-    mkIf
-    ;
+{lib}: let
+  inherit (builtins) throw;
 
   inherit (lib.types) bool;
 
-  inherit (lib'.matching) fmatch;
+  inherit (lib.lists) toList;
+
+  inherit (lib.modules) mkIf;
+
+  inherit (lib.attrsets) setAttrByPath getAttrFromPath;
+
+  inherit (lib.options) mkOption;
+
+  inherit (lib.strings) concatStringsSep;
 in rec {
   exports = {
     inherit mkModuleWithOptions mkModule mkModule';
@@ -27,23 +24,15 @@ in rec {
     default ? false,
     extraCondition ? (x: x && true),
   }: let
+    pathList = toList name;
+    stringName = concatStringsSep "." pathList;
+
     options = moduleConfig.options or {};
     options' = moduleConfig.options' or {};
     cfg =
       if (moduleConfig ? options || moduleConfig ? options')
-      then moduleConfig.config or (throw "Missing toplevel config attribute for ${name}")
+      then moduleConfig.config or (throw "Missing toplevel config attribute for '${stringName}'")
       else moduleConfig.config or moduleConfig;
-
-    pathList = fmatch name [
-      [
-        isList
-        name
-      ]
-      [
-        isString
-        [name]
-      ]
-    ];
 
     modulePath = ["modules"] ++ pathList;
     enableOptionPath = modulePath ++ ["enable"];
@@ -53,7 +42,7 @@ in rec {
         enable = mkOption {
           inherit default;
           type = bool;
-          description = "Enable ${name} module";
+          description = "Enable ${stringName} module";
         };
       }
       // options';
