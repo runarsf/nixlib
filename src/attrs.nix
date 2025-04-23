@@ -2,7 +2,7 @@
   lib,
   lib',
 }: let
-  inherit (builtins) isString isList;
+  inherit (builtins) isString isList head tail isAttrs;
 
   inherit (lib.lists) foldl;
 
@@ -68,4 +68,23 @@ in rec {
   enable = fill {enable = true;};
 
   disable = fill {enable = false;};
+
+  /**
+  Checks if the given attribute path exists in the attribute set.
+  */
+  hasAttrPath = path: attrs:
+    if path == []
+    then true
+    else let
+      head' = head path;
+      tail' = tail path;
+    in
+      if !(isAttrs attrs)
+      then false
+      else if attrs ? ${head'}
+      then
+        if tail' == []
+        then true
+        else hasAttrPath tail' attrs.${head'}
+      else false;
 }
