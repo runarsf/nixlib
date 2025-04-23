@@ -1,4 +1,7 @@
-{lib}: let
+{
+  lib,
+  lib',
+}: let
   inherit
     (builtins)
     match
@@ -13,6 +16,8 @@
     isString
     ;
 
+  inherit (lib'.lists) isEmpty;
+
   inherit (lib) toList;
 
   inherit (lib.path) hasPrefix;
@@ -23,7 +28,7 @@
 
   inherit (lib.strings) hasSuffix splitString;
 
-  inherit (lib.lists) unique concatMap flatten length;
+  inherit (lib.lists) unique concatMap flatten;
 
   inherit (lib.filesystem) pathIsRegularFile pathIsDirectory;
 
@@ -142,21 +147,23 @@ in rec {
       |> map dirOf
       |> unique;
 
-    finalFiles = flatten [
-      (
-        if filterDefault
-        then filter (file: !(elem (dirOf file) dirsWithDefaultNix) || isDefaultNix file) filteredFiles
-        else filteredFiles
-      )
-      (
-        if recursive
-        then let
-          includes = concatMap toListMaybe filteredInclude;
-        in
-          warnIf (length includes == 0) "concatPaths: No include paths found" includes
-        else filteredInclude
-      )
-    ];
+    finalFiles =
+      unique
+      <| flatten [
+        (
+          if filterDefault
+          then filter (file: !(elem (dirOf file) dirsWithDefaultNix) || isDefaultNix file) filteredFiles
+          else filteredFiles
+        )
+        (
+          if recursive
+          then let
+            includes = concatMap toListMaybe filteredInclude;
+          in
+            warnIf (isEmpty includes && !isEmpty include') "concatPaths: No include paths found" includes
+          else filteredInclude
+        )
+      ];
   in
-    finalFiles;
+    warnIf (isEmpty finalFiles) "concatPaths: No paths found" finalFiles;
 }

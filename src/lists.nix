@@ -1,5 +1,4 @@
-{lib}:
-let
+{lib}: let
   inherit (lib.lists) length;
 in rec {
   exports = {
