@@ -2,11 +2,11 @@
   lib,
   lib',
 }: let
-  inherit (builtins) isString isList head tail isAttrs;
+  inherit (builtins) isString isList head tail isAttrs concatStringsSep;
 
-  inherit (lib.lists) foldl;
+  inherit (lib.lists) foldl foldl';
 
-  inherit (lib.attrsets) setAttrByPath recursiveUpdate;
+  inherit (lib.attrsets) setAttrByPath recursiveUpdate attrNames;
 
   inherit (lib.strings) splitString;
 
@@ -87,4 +87,19 @@ in rec {
         then true
         else hasAttrPath tail' attrs.${head'}
       else false;
+
+  # Flattens the attribute set into a single level attribute set (a.b.c -> "a.b.c").
+  flattenAttrs = attrs: let
+    go = path: attrs:
+      foldl' (
+        acc: name: let
+          value = attrs.${name};
+          fullPath = path ++ [name];
+        in
+          if isAttrs value
+          then acc // (go fullPath value)
+          else acc // {"${concatStringsSep "." fullPath}" = value;}
+      ) {} (attrNames attrs);
+  in
+    go [] attrs;
 }
