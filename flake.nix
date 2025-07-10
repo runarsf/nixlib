@@ -91,12 +91,10 @@
           ];
 
           shellHook = ''
-            NAMAKA_VERISON="$(namaka --version | awknormal '{print $2}')"
-
             comment="$(tput setaf 8)"
             reset="$(tput sgr0)"
 
-            printf '\n> Namaka version:  %s\n\n' "$NAMAKA_VERISON"
+            printf '\n> Namaka version: %s\n\n' "$(namaka --version | awk '{print $2}')"
             printf 'To run tests, use:\n'
             printf '$ namaka check   %s# run checks%s\n' "$comment" "$reset"
             printf '$ namaka review  %s# review pending snapshots%s\n\n' "$comment" "$reset"
