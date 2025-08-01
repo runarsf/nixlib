@@ -19,10 +19,6 @@
     };
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
-    alejandra = {
-      url = "github:kamadorueda/alejandra/4.0.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs @ {
@@ -50,11 +46,6 @@
       system: let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [
-            (_: _: {
-              alejandra = inputs.alejandra.packages.${system}.default;
-            })
-          ];
         };
         treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
       in {

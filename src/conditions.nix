@@ -1,18 +1,13 @@
-{
-  lib,
-}:
-let
+{lib}: let
   inherit (lib.modules) mkIf mkMerge;
-in
-rec {
+in rec {
   exports = {
     inherit
       mkIfElse
       ;
   };
 
-  mkIfElse =
-    p: yes: no:
+  mkIfElse = p: yes: no:
     mkMerge [
       (mkIf p yes)
       (mkIf (!p) no)
