@@ -39,14 +39,14 @@ in rec {
   };
 
   /**
-  Collects `.nix` files from given paths,
+  Collects files from given paths,
   optionally recursing through subdirectories and applies filters.
   Inspired by and adapted from https://github.com/yunfachi/nypkgs/blob/master/lib/umport.nix
 
   # Arguments
 
   paths
-  : Path or list of paths to search for `.nix` files (automatically coerced to list).
+  : Path or list of paths to search for files (automatically coerced to list).
 
   include
   : Extra paths to add to results (bypasses normal filtering).
@@ -71,6 +71,7 @@ in rec {
     paths: Path | [Path],
     include?: Path | [Path],
     exclude?: Path | [Path|String],
+    suffix?: String,
     recursive?: Bool,
     filterDefault?: Bool,
   } -> [Path]
@@ -89,6 +90,7 @@ in rec {
     paths,
     include ? [],
     exclude ? [],
+    suffix ? ".nix",
     recursive ? true,
     filterDefault ? true,
   }: let
@@ -99,8 +101,10 @@ in rec {
     exclude' = coerce exclude;
 
     # Helper functions
-    isNixFile = path: pathIsRegularFile path && hasSuffix ".nix" (toString path);
-    isDefaultNix = path: match "default.nix" (baseNameOf path) != null;
+    hasFiletype = path: pathIsRegularFile path && hasSuffix suffix (toString path);
+    isDefaultNix = path:
+      (match "default.nix" (baseNameOf path) != null && suffix == ".nix")
+      || (match "init.lua" (baseNameOf path) != null && suffix == ".lua");
     toListMaybe = path: fs.toList <| fs.maybeMissing path;
 
     # Split exclude into paths and regex patterns
@@ -116,11 +120,7 @@ in rec {
 
     # Regex component matching
     componentExcluded = path: let
-      components =
-        path
-        |> toString
-        |> splitString "/"
-        |> filter (s: s != "");
+      components = path |> toString |> splitString "/" |> filter (s: s != "");
       matches = component: any (pattern: match pattern component != null) excludedPatterns;
     in
       any matches components;
@@ -129,23 +129,16 @@ in rec {
     getFiles = path:
       if recursive
       then toListMaybe path
-      else
-        path
-        |> readDir
-        |> mapAttrsToList (name: _: path + "/${name}");
+      else path |> readDir |> mapAttrsToList (name: _: path + "/${name}");
 
     candidateFiles = unique <| concatMap getFiles paths';
 
     # Filter files
-    filteredFiles = filter (f: isNixFile f && !pathExcluded f && !componentExcluded f) candidateFiles;
-    filteredInclude = filter (f: isNixFile f && !pathExcluded f) include';
+    filteredFiles = filter (f: hasFiletype f && !pathExcluded f && !componentExcluded f) candidateFiles;
+    filteredInclude = filter (f: hasFiletype f && !pathExcluded f) include';
 
     # Handle default.nix logic
-    dirsWithDefaultNix =
-      filteredFiles
-      |> filter isDefaultNix
-      |> map dirOf
-      |> unique;
+    dirsWithDefaultNix = filteredFiles |> filter isDefaultNix |> map dirOf |> unique;
 
     finalFiles =
       unique
