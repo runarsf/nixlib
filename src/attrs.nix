@@ -23,6 +23,7 @@ in rec {
 
   /**
   Set the value of each attribute given a list of paths.
+  Be wary that if the path does not exist, it will not be set, and nix will not complain.
 
   # Arguments
 
@@ -45,7 +46,6 @@ in rec {
   }
   ```
   */
-
   fill = value: xs: let
     normalizePath = p:
       fmatch p [
