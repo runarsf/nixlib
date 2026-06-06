@@ -32,9 +32,9 @@ in rec {
     else elemAt match 1;
 
   matchStringList = x: patterns:
-    filter (y: y != null) (
-      map (y: matchString y patterns) x
-    );
+    x
+    |> map (y: matchString y patterns)
+    |> filter (y: y != null);
 
   /**
   Pattern match based on functional predicates.
