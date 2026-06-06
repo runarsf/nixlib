@@ -2,9 +2,9 @@
   inherit
     (builtins)
     elemAt
-    throw
     head
     tail
+    filter
     ;
 
   inherit (lib.attrsets) matchAttrs;
@@ -23,6 +23,18 @@ in rec {
       else null;
   in
     v: l: elemAt (findFirst (x: (if_let v (elemAt x 0)) != null) null l) 1;
+
+  matchString = x: patterns: let
+    match = findFirst (y: (elemAt y 0) == x) null patterns;
+  in
+    if match == null
+    then null
+    else elemAt match 1;
+
+  matchStringList = x: patterns:
+    filter (y: y != null) (
+      map (y: matchString y patterns) x
+    );
 
   /**
   Pattern match based on functional predicates.
