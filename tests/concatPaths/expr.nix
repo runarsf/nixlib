@@ -2,7 +2,7 @@
   lib,
   lib',
 }: let
-  inherit (builtins) map concatMap tail;
+  inherit (builtins) concatMap tail;
 
   inherit (lib.strings) splitString;
 
